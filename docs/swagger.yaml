@@ -1,4 +1,108 @@
 basePath: /api/v1
+definitions:
+  dto.Customer:
+    properties:
+      address:
+        type: string
+      customer_id:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+    required:
+    - address
+    - customer_id
+    - email
+    - first_name
+    - last_name
+    - phone
+    type: object
+  dto.Order:
+    properties:
+      created_at:
+        type: string
+      customer:
+        $ref: '#/definitions/dto.Customer'
+      delivery_date:
+        type: string
+      order_date:
+        type: string
+      order_id:
+        type: integer
+      payment_method:
+        enum:
+        - credit_card
+        - paypal
+        - bank_transfer
+        type: string
+      payment_status:
+        enum:
+        - paid
+        - unpaid
+        - refunded
+        type: string
+      products:
+        items:
+          $ref: '#/definitions/dto.Product'
+        type: array
+      status:
+        enum:
+        - pending
+        - shipped
+        - delivered
+        - cancelled
+        type: string
+      total_amount:
+        type: number
+      tracking_number:
+        type: integer
+      updated_at:
+        type: string
+    required:
+    - created_at
+    - customer
+    - order_date
+    - order_id
+    - payment_method
+    - payment_status
+    - products
+    - status
+    - total_amount
+    - updated_at
+    type: object
+  dto.Product:
+    properties:
+      name:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    required:
+    - name
+    - price
+    - product_id
+    - quantity
+    type: object
+  response.Response:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  response.SuccessResponse:
+    properties:
+      status:
+        type: string
+    type: object
 info:
   contact:
     email: Z_shevelev@mail.ru
@@ -7,5 +111,63 @@ info:
     check their status.
   title: Kafka Manager API
   version: "1.0"
-paths: {}
+paths:
+  /api/v1/get_status:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the status for a given request_id
+      parameters:
+      - description: Request ID
+        in: query
+        name: request_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status response
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/response.Response'
+  /api/v1/orders:
+    post:
+      consumes:
+      - application/json
+      description: Create a new order
+      parameters:
+      - description: Order
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Order'
+      - description: Request ID
+        in: query
+        name: request_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/response.Response'
 swagger: "2.0"
