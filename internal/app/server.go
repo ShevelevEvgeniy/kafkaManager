@@ -37,7 +37,7 @@ func NewServer(cfg *config.Config, router chi.Router) *HttpServer {
 }
 
 func (hs *HttpServer) Run(log *zap.Logger, cfg *config.Config, certFile string, keyFile string) error {
-	log.Info("starting server: ", zap.String("port", cfg.HTTPServer.Port))
+	log.Info("starting http_server: ", zap.String("port", cfg.HTTPServer.Port))
 
 	if certFile == "" || keyFile == "" {
 		log.Fatal("Certificate or key file path not set in environment variables: ", zap.String("certFile", certFile), zap.String("keyFile", keyFile))
@@ -47,12 +47,12 @@ func (hs *HttpServer) Run(log *zap.Logger, cfg *config.Config, certFile string, 
 	go func() {
 		err := hs.server.ListenAndServeTLS(certFile, keyFile)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal("error occurred on server shutting down: ", zap.String("error", err.Error()))
+			log.Fatal("error occurred on http_server shutting down: ", zap.String("error", err.Error()))
 			return
 		}
 	}()
 
-	log.Info("server started")
+	log.Info("http_server started")
 
 	return nil
 }
@@ -69,9 +69,9 @@ func (hs *HttpServer) Shutdown(ctx context.Context, log *zap.Logger, stopTimeout
 		defer cancel()
 
 		if err := hs.server.Shutdown(shutdownCtx); err != nil {
-			log.Error("error occurred on server shutting down", zap.String("error", err.Error()))
+			log.Error("error occurred on http_server shutting down", zap.String("error", err.Error()))
 		} else {
-			log.Info("server stopped")
+			log.Info("http_server stopped")
 		}
 	case <-ctx.Done():
 		log.Info("context done, skipping shutdown")

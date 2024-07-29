@@ -32,13 +32,24 @@ func (a *App) Run(ctx context.Context) error {
 	server := NewServer(a.cfg, router)
 	err := server.Run(a.log, a.cfg, certFile, keyFile)
 	if err != nil {
-		a.log.Error("error occurred on server shutting down:", zap.String("error", err.Error()))
-		return errors.Wrap(err, "error occurred on server shutting down")
+		a.log.Error("error occurred on http_server shutting down:", zap.String("error", err.Error()))
+		return errors.Wrap(err, "error occurred on http_server shutting down")
+	}
+
+	a.log.Info("starting message consumer")
+
+	consumerCtx, consumerCancel := context.WithCancel(ctx)
+	err = di.MessageConsumer(consumerCtx).Start(consumerCtx)
+	if err != nil {
+		a.log.Error("error occurred on message consumer shutting down:", zap.String("error", err.Error()))
+		consumerCancel()
+		return errors.Wrap(err, "error occurred on message consumer shutting down")
 	}
 
 	a.log.Info("application started")
 
 	server.Shutdown(ctx, a.log, a.cfg.HTTPServer.StopTimeout)
+	consumerCancel()
 
 	return nil
 }
