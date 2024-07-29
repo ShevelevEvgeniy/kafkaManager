@@ -58,10 +58,7 @@ func NewKafkaClient(cfg config.Kafka, log *zap.Logger) (*Kafka, error) {
 
 func (c *Kafka) SendMessage(ctx context.Context, key, value []byte, topic string) error {
 	deliveryChan := make(chan kafka.Event, 1)
-	defer func() {
-		close(deliveryChan)
-		c.producer.Close()
-	}()
+	defer close(deliveryChan)
 
 	err := c.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
@@ -153,8 +150,6 @@ func (c *Kafka) handleDeliveryReports() {
 }
 
 func (c *Kafka) CreateTopic(ctx context.Context, topics []string) error {
-	defer c.adminClient.Close()
-
 	for _, topic := range topics {
 		exists, err := c.topicExists(ctx, topic)
 		if err != nil {
@@ -190,6 +185,8 @@ func (c *Kafka) topicExists(_ context.Context, topic string) (bool, error) {
 	return exists, nil
 }
 
-func (c *Kafka) CloseConsumer() {
+func (c *Kafka) Close() {
 	_ = c.consumer.Close()
+	c.producer.Close()
+	c.adminClient.Close()
 }
