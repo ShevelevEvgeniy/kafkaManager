@@ -34,6 +34,3 @@ restart:
 
 run-tests:
 	go test -v ./...
-
-swag-init:
-	swag init --parseDependency --parseInternal --dir ./cmd/api --output ./docs
