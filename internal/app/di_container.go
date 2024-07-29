@@ -6,7 +6,13 @@ import (
 
 	"github.com/ShevelevEvgeniy/kafkaManager/config"
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/clients/kafka"
+	"github.com/ShevelevEvgeniy/kafkaManager/internal/http_server/api/v1/handlers"
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/http_server/events"
+	mesTrackerRepo "github.com/ShevelevEvgeniy/kafkaManager/internal/postgres/repository/message_tracker_repository"
+	repoInterfaces "github.com/ShevelevEvgeniy/kafkaManager/internal/postgres/repository/repository_interfaces"
+	"github.com/ShevelevEvgeniy/kafkaManager/internal/service/order_service"
+	servInterfaces "github.com/ShevelevEvgeniy/kafkaManager/internal/service/service_interfaces"
+	"github.com/go-playground/validator/v10"
 
 	dbConn "github.com/ShevelevEvgeniy/kafkaManager/internal/postgres/db_connection"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,11 +20,15 @@ import (
 )
 
 type DiContainer struct {
-	cfg             *config.Config
-	log             *zap.Logger
-	db              *pgxpool.Pool
-	kafka           *kafka.Kafka
-	messageConsumer *events.MessageConsumerEvent
+	cfg                      *config.Config
+	log                      *zap.Logger
+	db                       *pgxpool.Pool
+	kafka                    *kafka.Kafka
+	messageConsumer          *events.MessageConsumerEvent
+	validator                *validator.Validate
+	orderHandler             *handlers.OrdersHandler
+	ordersService            servInterfaces.OrderService
+	messageTrackerRepository repoInterfaces.MessageTrackerRepository
 }
 
 func NewDiContainer(cfg *config.Config, log *zap.Logger) DiContainer {
@@ -58,8 +68,40 @@ func (di *DiContainer) Kafka(_ context.Context) *kafka.Kafka {
 
 func (di *DiContainer) MessageConsumer(ctx context.Context) *events.MessageConsumerEvent {
 	if di.messageConsumer == nil {
-		di.messageConsumer = events.NewMessageConsumerEvent(di.log, di.Kafka(ctx), di.OrdersService(ctx), di.Validator(ctx))
+		di.messageConsumer = events.NewMessageConsumerEvent(di.log, di.Kafka(ctx))
 	}
 
 	return di.messageConsumer
+}
+
+func (di *DiContainer) OrdersService(ctx context.Context) servInterfaces.OrderService {
+	if di.ordersService == nil {
+		di.ordersService = order_service.NewOrderService(di.MessageTrackerRepository(ctx), di.Kafka(ctx))
+	}
+
+	return di.ordersService
+}
+
+func (di *DiContainer) MessageTrackerRepository(ctx context.Context) repoInterfaces.MessageTrackerRepository {
+	if di.messageTrackerRepository == nil {
+		di.messageTrackerRepository = mesTrackerRepo.NewMessageTrackerRepository(di.DB(ctx))
+	}
+
+	return di.messageTrackerRepository
+}
+
+func (di *DiContainer) Validator(_ context.Context) *validator.Validate {
+	if di.validator == nil {
+		di.validator = validator.New()
+	}
+
+	return di.validator
+}
+
+func (di *DiContainer) OrdersHandler(ctx context.Context) *handlers.OrdersHandler {
+	if di.orderHandler == nil {
+		di.orderHandler = handlers.NewOrdersHandler(di.log, di.OrdersService(ctx), di.Validator(ctx))
+	}
+
+	return di.orderHandler
 }

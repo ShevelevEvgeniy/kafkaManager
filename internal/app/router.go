@@ -9,6 +9,7 @@ import (
 
 const (
 	ApiV1Group = "/api/v1"
+	Order      = "/orders"
 )
 
 func initRouter(ctx context.Context, di DiContainer) *chi.Mux {
@@ -17,6 +18,7 @@ func initRouter(ctx context.Context, di DiContainer) *chi.Mux {
 	router.Use(middleware.RequestID)
 
 	router.Route(ApiV1Group, func(router chi.Router) {
+		router.Post(Order, di.OrdersHandler(ctx).CreateOrder(ctx))
 	})
 
 	return router
