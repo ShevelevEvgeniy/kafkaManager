@@ -6,3 +6,5 @@ main
 
 # config
 .env
+/configs/secrets/server.crt
+/configs/secrets/server.key
