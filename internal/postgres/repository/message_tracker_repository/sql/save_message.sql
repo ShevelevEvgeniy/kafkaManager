@@ -1,0 +1,1 @@
+INSERT INTO message_tracker (request_id, message, status) VALUES ($1, $2, $3)

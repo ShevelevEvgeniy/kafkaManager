@@ -61,4 +61,6 @@ func (e *MessageConsumerEvent) Start(ctx context.Context) error {
 
 func (e *MessageConsumerEvent) handleMessages(msg *kafka.Message, ctx context.Context) error {
 	//TODO
+
+	return nil
 }
