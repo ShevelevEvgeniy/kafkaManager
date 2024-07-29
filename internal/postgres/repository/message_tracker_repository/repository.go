@@ -3,6 +3,7 @@ package message_tracker_repository
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 )
@@ -36,4 +37,19 @@ func (r *Repository) UpdateMessageStatusByRequestId(ctx context.Context, model M
 		return errors.Wrap(err, "failed to update message status")
 	}
 	return nil
+}
+
+func (r *Repository) GetMessageByRequestId(ctx context.Context, requestId string) (string, error) {
+	query := GetMessageByRequestId
+
+	var status string
+	err := r.db.QueryRow(ctx, query, requestId).Scan(&status)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", errors.Wrap(err, "failed to get message by request ID")
+	}
+
+	return status, nil
 }

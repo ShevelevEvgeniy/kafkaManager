@@ -12,6 +12,7 @@ import (
 	repoInterfaces "github.com/ShevelevEvgeniy/kafkaManager/internal/postgres/repository/repository_interfaces"
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/service/order_service"
 	servInterfaces "github.com/ShevelevEvgeniy/kafkaManager/internal/service/service_interfaces"
+	"github.com/ShevelevEvgeniy/kafkaManager/internal/service/statuses_service"
 	"github.com/go-playground/validator/v10"
 
 	dbConn "github.com/ShevelevEvgeniy/kafkaManager/internal/postgres/db_connection"
@@ -27,7 +28,9 @@ type DiContainer struct {
 	messageConsumer          *events.MessageConsumerEvent
 	validator                *validator.Validate
 	orderHandler             *handlers.OrdersHandler
+	statusHandler            *handlers.GetStatusHandler
 	ordersService            servInterfaces.OrderService
+	statusService            servInterfaces.StatusService
 	messageTrackerRepository repoInterfaces.MessageTrackerRepository
 }
 
@@ -68,7 +71,7 @@ func (di *DiContainer) Kafka(_ context.Context) *kafka.Kafka {
 
 func (di *DiContainer) MessageConsumer(ctx context.Context) *events.MessageConsumerEvent {
 	if di.messageConsumer == nil {
-		di.messageConsumer = events.NewMessageConsumerEvent(di.log, di.Kafka(ctx))
+		di.messageConsumer = events.NewMessageConsumerEvent(di.log, di.Kafka(ctx), di.OrdersService(ctx), di.Validator(ctx))
 	}
 
 	return di.messageConsumer
@@ -80,6 +83,14 @@ func (di *DiContainer) OrdersService(ctx context.Context) servInterfaces.OrderSe
 	}
 
 	return di.ordersService
+}
+
+func (di *DiContainer) StatusService(ctx context.Context) servInterfaces.StatusService {
+	if di.statusService == nil {
+		di.statusService = statuses_service.NewStatusService(di.MessageTrackerRepository(ctx))
+	}
+
+	return di.statusService
 }
 
 func (di *DiContainer) MessageTrackerRepository(ctx context.Context) repoInterfaces.MessageTrackerRepository {
@@ -104,4 +115,12 @@ func (di *DiContainer) OrdersHandler(ctx context.Context) *handlers.OrdersHandle
 	}
 
 	return di.orderHandler
+}
+
+func (di *DiContainer) GetStatusHandler(ctx context.Context) *handlers.GetStatusHandler {
+	if di.statusHandler == nil {
+		di.statusHandler = handlers.NewGetStatusHandler(di.log, di.StatusService(ctx))
+	}
+
+	return di.statusHandler
 }
