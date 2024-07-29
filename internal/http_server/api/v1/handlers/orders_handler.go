@@ -55,7 +55,7 @@ func (h *OrdersHandler) CreateOrder(ctx context.Context) http.HandlerFunc {
 		if err != nil {
 			h.log.Error("failed to validate request body", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.BadRequest(err.Error()))
+			render.JSON(w, r, response.BadRequest("invalid request body"))
 			return
 		}
 

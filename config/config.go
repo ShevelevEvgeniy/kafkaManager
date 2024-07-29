@@ -1,9 +1,8 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/kelseyhightower/envconfig"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +17,7 @@ func MustLoad(log *zap.Logger) (*Config, error) {
 	var cfg Config
 
 	if err := envconfig.Process("", &cfg); err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+		return nil, errors.Wrap(err, "failed to load config")
 	}
 
 	logNonSecretConfig(log, &cfg)
