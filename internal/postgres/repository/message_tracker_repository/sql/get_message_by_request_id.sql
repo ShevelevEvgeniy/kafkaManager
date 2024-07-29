@@ -1,0 +1,1 @@
+SELECT status FROM message_tracker WHERE request_id = $1

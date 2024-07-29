@@ -10,6 +10,7 @@ import (
 const (
 	ApiV1Group = "/api/v1"
 	Order      = "/orders"
+	GetStatus  = "/get_status"
 )
 
 func initRouter(ctx context.Context, di DiContainer) *chi.Mux {
@@ -19,6 +20,7 @@ func initRouter(ctx context.Context, di DiContainer) *chi.Mux {
 
 	router.Route(ApiV1Group, func(router chi.Router) {
 		router.Post(Order, di.OrdersHandler(ctx).CreateOrder(ctx))
+		router.Get(GetStatus, di.GetStatusHandler(ctx).GetStatus(ctx))
 	})
 
 	return router
