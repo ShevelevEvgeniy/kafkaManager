@@ -50,12 +50,20 @@ func (h *OrdersHandler) CreateOrder(ctx context.Context) http.HandlerFunc {
 
 		queryParams := r.URL.Query()
 		requestId := queryParams.Get("request_id")
+		if requestId == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, map[string]string{"error": "request_id is required"})
+			return
+		}
 
 		err = h.service.SaveOrderMessage(ctx, dto, requestId)
 		if err != nil {
 			h.log.Error("failed to save orders", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
+			render.JSON(w, r, map[string]string{"error": "failed to save orders"})
+			return
 		}
+
 		w.WriteHeader(http.StatusOK)
 		render.JSON(w, r, map[string]string{"message": "success"})
 	}

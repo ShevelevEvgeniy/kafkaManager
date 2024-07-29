@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ShevelevEvgeniy/kafkaManager/config"
 	kafka2 "github.com/ShevelevEvgeniy/kafkaManager/internal/clients/kafka"
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/clients/kafka/topics"
 	DTOs "github.com/ShevelevEvgeniy/kafkaManager/internal/dto"
@@ -30,8 +31,8 @@ func NewMessageConsumerEvent(log *zap.Logger, kafka *kafka2.Kafka, service servI
 	}
 }
 
-func (e *MessageConsumerEvent) Start(ctx context.Context) error {
-	err := e.kafkaClient.SubscribeToTopics(ctx, topics.OrderStatusTopic)
+func (e *MessageConsumerEvent) Start(ctx context.Context, cfg config.Kafka) error {
+	err := e.kafkaClient.SubscribeToTopics(ctx, cfg.Topic)
 	if err != nil {
 		e.log.Error("error while subscribing to topics", zap.Error(err))
 		return errors.Wrap(err, "error while subscribing to topics")
@@ -42,7 +43,7 @@ func (e *MessageConsumerEvent) Start(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			e.kafkaClient.CloseConsumer()
+			e.kafkaClient.Close()
 			e.log.Info("shutting down message consumer")
 			return ctx.Err()
 		case err = <-errChan:
