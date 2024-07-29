@@ -17,12 +17,12 @@ import (
 
 type MessageConsumerEvent struct {
 	log         *zap.Logger
-	kafkaClient *kafka2.Kafka
+	kafkaClient kafka2.ClientKafka
 	service     servInterfaces.OrderService
 	validator   *validator.Validate
 }
 
-func NewMessageConsumerEvent(log *zap.Logger, kafka *kafka2.Kafka, service servInterfaces.OrderService, validator *validator.Validate) *MessageConsumerEvent {
+func NewMessageConsumerEvent(log *zap.Logger, kafka kafka2.ClientKafka, service servInterfaces.OrderService, validator *validator.Validate) *MessageConsumerEvent {
 	return &MessageConsumerEvent{
 		log:         log,
 		kafkaClient: kafka,
@@ -31,11 +31,15 @@ func NewMessageConsumerEvent(log *zap.Logger, kafka *kafka2.Kafka, service servI
 	}
 }
 
-func (e *MessageConsumerEvent) Start(ctx context.Context, cfg config.Kafka) error {
+func (e *MessageConsumerEvent) Start(ctx context.Context, cfg config.Kafka) {
+	go e.listenAndHandleMessages(ctx, cfg)
+}
+
+func (e *MessageConsumerEvent) listenAndHandleMessages(ctx context.Context, cfg config.Kafka) {
 	err := e.kafkaClient.SubscribeToTopics(ctx, cfg.Topic)
 	if err != nil {
 		e.log.Error("error while subscribing to topics", zap.Error(err))
-		return errors.Wrap(err, "error while subscribing to topics")
+		return
 	}
 
 	messageChan, errChan := e.kafkaClient.ListenToTopic(ctx, topics.OrderStatusTopic)
@@ -45,16 +49,16 @@ func (e *MessageConsumerEvent) Start(ctx context.Context, cfg config.Kafka) erro
 		case <-ctx.Done():
 			e.kafkaClient.Close()
 			e.log.Info("shutting down message consumer")
-			return ctx.Err()
+			return
 		case err = <-errChan:
 			if err != nil {
 				e.log.Error("error while listening to topic", zap.Error(err))
-				return errors.Wrap(err, "error while listening to topic")
+				return
 			}
 		case msg, ok := <-messageChan:
 			if !ok {
 				e.log.Error("message channel closed")
-				return errors.New("message channel closed")
+				return
 			}
 
 			e.log.Info("received message", zap.String("message", string(msg.Value)))
@@ -62,7 +66,7 @@ func (e *MessageConsumerEvent) Start(ctx context.Context, cfg config.Kafka) erro
 			err = e.handleMessages(msg, ctx)
 			if err != nil {
 				e.log.Error("error while handling message", zap.Error(err))
-				return errors.Wrap(err, "error while handling message")
+				return
 			}
 		}
 	}

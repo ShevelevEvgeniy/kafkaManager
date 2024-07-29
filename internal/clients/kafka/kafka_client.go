@@ -9,6 +9,14 @@ import (
 	"go.uber.org/zap"
 )
 
+type ClientKafka interface {
+	ListenToTopic(ctx context.Context, topic string) (<-chan *kafka.Message, <-chan error)
+	SendMessage(ctx context.Context, key, value []byte, topic string) error
+	SubscribeToTopics(ctx context.Context, topic string) error
+	CreateTopic(ctx context.Context, topics []string) error
+	Close()
+}
+
 type Kafka struct {
 	producer    *kafka.Producer
 	consumer    *kafka.Consumer
@@ -117,7 +125,7 @@ func (c *Kafka) ListenToTopic(ctx context.Context, topic string) (<-chan *kafka.
 		}
 	}()
 
-	return messageChan, nil
+	return messageChan, errChan
 }
 
 func (c *Kafka) SubscribeToTopics(ctx context.Context, topic string) error {
