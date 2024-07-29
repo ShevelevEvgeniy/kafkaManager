@@ -27,3 +27,13 @@ func (r *Repository) SaveMessage(ctx context.Context, model Model) error {
 
 	return nil
 }
+
+func (r *Repository) UpdateMessageStatusByRequestId(ctx context.Context, model Model) error {
+	query := UpdateMessageStatusByRequestId
+
+	_, err := r.db.Exec(ctx, query, model.Status, model.RequestId)
+	if err != nil {
+		return errors.Wrap(err, "failed to update message status")
+	}
+	return nil
+}

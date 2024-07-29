@@ -8,4 +8,5 @@ import (
 
 type MessageTrackerRepository interface {
 	SaveMessage(ctx context.Context, model mesTrackModel.Model) error
+	UpdateMessageStatusByRequestId(ctx context.Context, model mesTrackModel.Model) error
 }

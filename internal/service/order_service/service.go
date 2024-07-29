@@ -48,3 +48,14 @@ func (s *OrderService) SaveOrderMessage(ctx context.Context, order dto.Order, re
 
 	return nil
 }
+
+func (s *OrderService) UpdateStatusOrderMessage(ctx context.Context, dto dto.OrderMessageResponse) error {
+	model := convertor.OrderMessageDtoToTrackingModel(dto)
+
+	err := s.repository.UpdateMessageStatusByRequestId(ctx, model)
+	if err != nil {
+		return errors.Wrap(err, "failed to update message status")
+	}
+
+	return nil
+}

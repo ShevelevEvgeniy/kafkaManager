@@ -8,4 +8,5 @@ import (
 
 type OrderService interface {
 	SaveOrderMessage(ctx context.Context, order dto.Order, requestId string) error
+	UpdateStatusOrderMessage(ctx context.Context, dto dto.OrderMessageResponse) error
 }
