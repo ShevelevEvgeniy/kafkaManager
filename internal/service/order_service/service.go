@@ -15,10 +15,10 @@ import (
 
 type OrderService struct {
 	repository repoInterfaces.MessageTrackerRepository
-	kafka      *kafka.Kafka
+	kafka      kafka.ClientKafka
 }
 
-func NewOrderService(repository repoInterfaces.MessageTrackerRepository, kafka *kafka.Kafka) *OrderService {
+func NewOrderService(repository repoInterfaces.MessageTrackerRepository, kafka kafka.ClientKafka) *OrderService {
 	return &OrderService{
 		repository: repository,
 		kafka:      kafka,

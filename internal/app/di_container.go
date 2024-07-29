@@ -24,7 +24,7 @@ type DiContainer struct {
 	cfg                      *config.Config
 	log                      *zap.Logger
 	db                       *pgxpool.Pool
-	kafka                    *kafka.Kafka
+	kafka                    kafka.ClientKafka
 	messageConsumer          *events.MessageConsumerEvent
 	validator                *validator.Validate
 	orderHandler             *handlers.OrdersHandler
@@ -56,7 +56,7 @@ func (di *DiContainer) DB(ctx context.Context) *pgxpool.Pool {
 	return di.db
 }
 
-func (di *DiContainer) Kafka(_ context.Context) *kafka.Kafka {
+func (di *DiContainer) Kafka(_ context.Context) kafka.ClientKafka {
 	if di.kafka == nil {
 		client, err := kafka.NewKafkaClient(di.cfg.Kafka, di.log)
 		if err != nil {

@@ -40,12 +40,7 @@ func (a *App) Run(ctx context.Context) error {
 	a.log.Info("starting message consumer")
 
 	consumerCtx, consumerCancel := context.WithCancel(ctx)
-	err = di.MessageConsumer(consumerCtx).Start(consumerCtx, a.cfg.Kafka)
-	if err != nil {
-		a.log.Error("error occurred on message consumer shutting down:", zap.String("error", err.Error()))
-		consumerCancel()
-		return errors.Wrap(err, "error occurred on message consumer shutting down")
-	}
+	di.MessageConsumer(consumerCtx).Start(consumerCtx, a.cfg.Kafka)
 
 	a.log.Info("application started")
 

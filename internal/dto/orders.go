@@ -34,6 +34,6 @@ type Customer struct {
 }
 
 type OrderMessageResponse struct {
-	RequestId string `json:"RequestId" validate:"required"`
-	Status    string `json:"Status" validate:"required"`
+	RequestId string `json:"request_id" validate:"required"`
+	Status    string `json:"status" validate:"required"`
 }
