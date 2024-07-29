@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ShevelevEvgeniy/kafkaManager/config"
+	_ "github.com/ShevelevEvgeniy/kafkaManager/docs"
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/app"
 	"github.com/ShevelevEvgeniy/kafkaManager/lib/logger/uber_zap"
 	"go.uber.org/zap"

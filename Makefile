@@ -23,10 +23,10 @@ migrate-up:
 	make shell cmd="migrate -source $(MIGRATION_URL) -database $(DB_DRIVER_NAME)://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSL_MODE) -verbose up"
 
 migrate-create:
-	migrate create -ext sql -dir migrations $(name)
+	make shell cmd="migrate create -ext sql -dir migrations $(name)"
 
 migrate-down:
-	migrate -source $(MIGRATION_URL) -database $(DB_DRIVER_NAME)://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSL_MODE) -verbose down
+	make shell cmd="migrate -source $(MIGRATION_URL) -database $(DB_DRIVER_NAME)://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSL_MODE) -verbose down"
 
 restart:
 	@$(MAKE) -s docker-build
