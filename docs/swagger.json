@@ -1,0 +1,14 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This API manages Kafka messages by allowing you to create orders and check their status.",
+        "title": "Kafka Manager API",
+        "contact": {
+            "name": "API Support",
+            "email": "Z_shevelev@mail.ru"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/api/v1",
+    "paths": {}
+}
