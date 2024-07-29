@@ -6,16 +6,19 @@ import (
 
 	"github.com/ShevelevEvgeniy/kafkaManager/config"
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/clients/kafka"
+	"github.com/ShevelevEvgeniy/kafkaManager/internal/http_server/events"
+
 	dbConn "github.com/ShevelevEvgeniy/kafkaManager/internal/postgres/db_connection"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
 type DiContainer struct {
-	cfg   *config.Config
-	log   *zap.Logger
-	db    *pgxpool.Pool
-	kafka *kafka.Kafka
+	cfg             *config.Config
+	log             *zap.Logger
+	db              *pgxpool.Pool
+	kafka           *kafka.Kafka
+	messageConsumer *events.MessageConsumerEvent
 }
 
 func NewDiContainer(cfg *config.Config, log *zap.Logger) DiContainer {
@@ -51,4 +54,12 @@ func (di *DiContainer) Kafka(_ context.Context) *kafka.Kafka {
 	}
 
 	return di.kafka
+}
+
+func (di *DiContainer) MessageConsumer(ctx context.Context) *events.MessageConsumerEvent {
+	if di.messageConsumer == nil {
+		di.messageConsumer = events.NewMessageConsumerEvent(di.log, di.Kafka(ctx), di.OrdersService(ctx), di.Validator(ctx))
+	}
+
+	return di.messageConsumer
 }
