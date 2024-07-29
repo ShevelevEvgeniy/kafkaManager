@@ -1,0 +1,8 @@
+# Goland project files
+.idea/
+
+# Binaries
+main
+
+# config
+.env
