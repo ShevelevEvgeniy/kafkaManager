@@ -34,3 +34,5 @@ restart:
 
 run-tests:
 	go test -v ./...
+
+#kafka-console-producer.sh --bootstrap-server kafka:9092 --topic order_status
