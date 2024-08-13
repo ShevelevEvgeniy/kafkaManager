@@ -14,10 +14,10 @@ down:
 	docker-compose down --remove-orphans
 
 docker-build:
-	docker build -t app-web .
+	docker build -t kafka-manager .
 
 shell:
-	docker-compose exec app-web /bin/bash -c "$(cmd)"
+	docker-compose exec kafka-manager /bin/bash -c "$(cmd)"
 
 migrate-up:
 	make shell cmd="migrate -source $(MIGRATION_URL) -database $(DB_DRIVER_NAME)://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSL_MODE) -verbose up"
@@ -30,7 +30,9 @@ migrate-down:
 
 restart:
 	@$(MAKE) -s docker-build
-	@docker-compose up -d --no-deps --build app-web
+	@docker-compose up -d --no-deps --build kafka-manager
 
 run-tests:
 	go test -v ./...
+
+#kafka-console-producer.sh --bootstrap-server kafka:9092 --topic order_status

@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/http_server/api/v1/response"
 	"github.com/go-chi/render"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -51,6 +53,12 @@ func (h *GetStatusHandler) GetStatus(ctx context.Context) http.HandlerFunc {
 
 		status, err := h.service.GetStatus(ctx, requestId)
 		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				h.log.Error("no status found for request id", zap.Error(err))
+				w.WriteHeader(http.StatusNotFound)
+				render.JSON(w, r, response.NotFound("status not found"))
+				return
+			}
 			h.log.Error("failed to get status", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, response.InternalServerError())

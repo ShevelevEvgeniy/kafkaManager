@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"strings"
 
 	"github.com/ShevelevEvgeniy/kafkaManager/config"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -10,10 +11,10 @@ import (
 )
 
 type ClientKafka interface {
-	ListenToTopic(ctx context.Context, topic string) (<-chan *kafka.Message, <-chan error)
+	ListenToTopic(ctx context.Context) (<-chan *kafka.Message, <-chan error)
 	SendMessage(ctx context.Context, key, value []byte, topic string) error
-	SubscribeToTopics(ctx context.Context, topic string) error
-	CreateTopic(ctx context.Context, topics []string) error
+	SubscribeToTopics(ctx context.Context, topic string)
+	CreateTopics(ctx context.Context, topics []string) error
 	Close()
 }
 
@@ -25,7 +26,7 @@ type Kafka struct {
 	log         *zap.Logger
 }
 
-func NewKafkaClient(cfg config.Kafka, log *zap.Logger) (*Kafka, error) {
+func NewKafkaClient(ctx context.Context, cfg config.Kafka, log *zap.Logger) (*Kafka, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers":  cfg.Broker,
 		"acks":               "all",
@@ -37,7 +38,7 @@ func NewKafkaClient(cfg config.Kafka, log *zap.Logger) (*Kafka, error) {
 		return nil, errors.Wrap(err, "failed to create kafka producer")
 	}
 
-	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{"bootstrap.servers": cfg.Broker, "group.id": "messaggio", "auto.offset.reset": "earliest"})
+	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{"bootstrap.servers": cfg.Broker, "group.id": "kafkaManager", "auto.offset.reset": "earliest"})
 	if err != nil {
 		log.Error("failed to create kafka consumer", zap.Error(err))
 		return nil, errors.Wrap(err, "failed to create kafka consumer")
@@ -49,7 +50,7 @@ func NewKafkaClient(cfg config.Kafka, log *zap.Logger) (*Kafka, error) {
 		return nil, errors.Wrap(err, "failed to create kafka admin client")
 	}
 
-	log.Info("created kafka producer", zap.String("broker", cfg.Broker), zap.String("topic", cfg.Topic))
+	log.Info("created kafka client", zap.String("broker", cfg.Broker), zap.String("topics", cfg.Topics))
 
 	client := &Kafka{
 		producer:    producer,
@@ -59,9 +60,23 @@ func NewKafkaClient(cfg config.Kafka, log *zap.Logger) (*Kafka, error) {
 		log:         log,
 	}
 
+	go client.SubscribeToTopics(ctx, cfg.Topics)
 	go client.handleDeliveryReports()
 
 	return client, nil
+}
+
+func (c *Kafka) handleDeliveryReports() {
+	for e := range c.producer.Events() {
+		switch ev := e.(type) {
+		case *kafka.Message:
+			if ev.TopicPartition.Error != nil {
+				c.log.Error("Delivery failed", zap.Error(ev.TopicPartition.Error))
+			} else {
+				c.log.Error("Delivered message", zap.String("value", string(ev.Value)))
+			}
+		}
+	}
 }
 
 func (c *Kafka) SendMessage(ctx context.Context, key, value []byte, topic string) error {
@@ -93,7 +108,7 @@ func (c *Kafka) SendMessage(ctx context.Context, key, value []byte, topic string
 	}
 }
 
-func (c *Kafka) ListenToTopic(ctx context.Context, topic string) (<-chan *kafka.Message, <-chan error) {
+func (c *Kafka) ListenToTopic(ctx context.Context) (<-chan *kafka.Message, <-chan error) {
 	messageChan := make(chan *kafka.Message)
 	errChan := make(chan error, 1)
 
@@ -115,7 +130,7 @@ func (c *Kafka) ListenToTopic(ctx context.Context, topic string) (<-chan *kafka.
 						continue
 					}
 
-					c.log.Error("failed to read message from topic", zap.String("topic", topic), zap.Error(err))
+					c.log.Error("failed to read message from topic", zap.Error(err))
 					errChan <- errors.Wrap(err, "failed to read message from topic")
 					return
 				}
@@ -128,36 +143,23 @@ func (c *Kafka) ListenToTopic(ctx context.Context, topic string) (<-chan *kafka.
 	return messageChan, errChan
 }
 
-func (c *Kafka) SubscribeToTopics(ctx context.Context, topic string) error {
-	err := c.CreateTopic(ctx, []string{topic})
+func (c *Kafka) SubscribeToTopics(ctx context.Context, topics string) {
+	topicsSlice := strings.Split(topics, ",")
+
+	err := c.CreateTopics(ctx, topicsSlice)
 	if err != nil {
-		c.log.Error("failed to create topic", zap.String("topic", topic), zap.Error(err))
-		return errors.Wrap(err, "failed to create topic")
+		c.log.Error("failed to create topic", zap.String("topic", topics), zap.Error(err))
+		return
 	}
 
-	err = c.consumer.SubscribeTopics([]string{topic}, nil)
+	err = c.consumer.SubscribeTopics(topicsSlice, nil)
 	if err != nil {
-		c.log.Error("failed to subscribe to topic", zap.String("topic", topic), zap.Error(err))
-		return errors.Wrap(err, "failed to subscribe to topic")
-	}
-
-	return nil
-}
-
-func (c *Kafka) handleDeliveryReports() {
-	for e := range c.producer.Events() {
-		switch ev := e.(type) {
-		case *kafka.Message:
-			if ev.TopicPartition.Error != nil {
-				c.log.Error("Delivery failed", zap.Error(ev.TopicPartition.Error))
-			} else {
-				c.log.Error("Delivered message", zap.String("value", string(ev.Value)))
-			}
-		}
+		c.log.Error("failed to subscribe to topic", zap.String("topic", topics), zap.Error(err))
+		return
 	}
 }
 
-func (c *Kafka) CreateTopic(ctx context.Context, topics []string) error {
+func (c *Kafka) CreateTopics(ctx context.Context, topics []string) error {
 	for _, topic := range topics {
 		exists, err := c.topicExists(ctx, topic)
 		if err != nil {

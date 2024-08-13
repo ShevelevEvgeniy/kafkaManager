@@ -43,6 +43,13 @@ func Conflict(msg string) Response {
 	}
 }
 
+func NotFound(msg string) Response {
+	return Response{
+		Status: StatusError,
+		Error:  msg,
+	}
+}
+
 func InternalServerError() Response {
 	return Response{
 		Status: StatusError,

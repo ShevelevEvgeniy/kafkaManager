@@ -13,6 +13,7 @@ import (
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/service/order_service"
 	servInterfaces "github.com/ShevelevEvgeniy/kafkaManager/internal/service/service_interfaces"
 	"github.com/ShevelevEvgeniy/kafkaManager/internal/service/statuses_service"
+	"github.com/ShevelevEvgeniy/kafkaManager/pkg/event_dispatcher"
 	"github.com/go-playground/validator/v10"
 
 	dbConn "github.com/ShevelevEvgeniy/kafkaManager/internal/postgres/db_connection"
@@ -32,6 +33,8 @@ type DiContainer struct {
 	ordersService            servInterfaces.OrderService
 	statusService            servInterfaces.StatusService
 	messageTrackerRepository repoInterfaces.MessageTrackerRepository
+	eventDispatcher          event_dispatcher.EventDispatcherInterface
+	messageStatusHandler     *events.MessageStatusHandler
 }
 
 func NewDiContainer(cfg *config.Config, log *zap.Logger) DiContainer {
@@ -56,9 +59,9 @@ func (di *DiContainer) DB(ctx context.Context) *pgxpool.Pool {
 	return di.db
 }
 
-func (di *DiContainer) Kafka(_ context.Context) kafka.ClientKafka {
+func (di *DiContainer) Kafka(ctx context.Context) kafka.ClientKafka {
 	if di.kafka == nil {
-		client, err := kafka.NewKafkaClient(di.cfg.Kafka, di.log)
+		client, err := kafka.NewKafkaClient(ctx, di.cfg.Kafka, di.log)
 		if err != nil {
 			os.Exit(1)
 		}
@@ -69,9 +72,25 @@ func (di *DiContainer) Kafka(_ context.Context) kafka.ClientKafka {
 	return di.kafka
 }
 
+func (di *DiContainer) EventDispatcher(_ context.Context) event_dispatcher.EventDispatcherInterface {
+	if di.eventDispatcher == nil {
+		di.eventDispatcher = event_dispatcher.New()
+	}
+
+	return di.eventDispatcher
+}
+
+func (di *DiContainer) MessageStatusHandler(ctx context.Context) *events.MessageStatusHandler {
+	if di.messageStatusHandler == nil {
+		di.messageStatusHandler = events.NewMessageStatusHandler(di.log, di.OrdersService(ctx), di.Validator(ctx))
+	}
+
+	return di.messageStatusHandler
+}
+
 func (di *DiContainer) MessageConsumer(ctx context.Context) *events.MessageConsumerEvent {
 	if di.messageConsumer == nil {
-		di.messageConsumer = events.NewMessageConsumerEvent(di.log, di.Kafka(ctx), di.OrdersService(ctx), di.Validator(ctx))
+		di.messageConsumer = events.NewMessageConsumerEvent(di.log, di.Kafka(ctx), di.EventDispatcher(ctx))
 	}
 
 	return di.messageConsumer

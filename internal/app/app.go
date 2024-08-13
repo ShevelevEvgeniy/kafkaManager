@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"os"
 
 	"github.com/ShevelevEvgeniy/kafkaManager/config"
 	_ "github.com/ShevelevEvgeniy/kafkaManager/docs"
@@ -23,15 +22,12 @@ func NewApp(cfg *config.Config, log *zap.Logger) *App {
 }
 
 func (a *App) Run(ctx context.Context) error {
-	certFile := os.Getenv("HTTP_SERVER_CERT_FILE")
-	keyFile := os.Getenv("HTTP_SERVER_KEY_FILE")
-
 	di := NewDiContainer(a.cfg, a.log)
 
 	router := initRouter(ctx, di)
 
 	server := NewServer(a.cfg, router)
-	err := server.Run(a.log, a.cfg, certFile, keyFile)
+	err := server.Run(a.log, a.cfg)
 	if err != nil {
 		a.log.Error("error occurred on http_server shutting down:", zap.String("error", err.Error()))
 		return errors.Wrap(err, "error occurred on http_server shutting down")
@@ -39,13 +35,24 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.log.Info("starting message consumer")
 
+	a.registeredEvents(ctx, di)
+
 	consumerCtx, consumerCancel := context.WithCancel(ctx)
-	di.MessageConsumer(consumerCtx).Start(consumerCtx, a.cfg.Kafka)
+	di.MessageConsumer(consumerCtx).Start(consumerCtx)
 
 	a.log.Info("application started")
 
 	server.Shutdown(ctx, a.log, a.cfg.HTTPServer.StopTimeout)
 	consumerCancel()
 
+	a.log.Info("application stopped")
+
 	return nil
+}
+
+func (a *App) registeredEvents(ctx context.Context, di DiContainer) {
+	a.log.Info("registered events")
+
+	eventDispatcher := di.EventDispatcher(ctx)
+	eventDispatcher.Subscribe("order_status", di.MessageStatusHandler(ctx))
 }
