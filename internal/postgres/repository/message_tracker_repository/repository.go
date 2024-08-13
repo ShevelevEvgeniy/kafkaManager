@@ -46,7 +46,7 @@ func (r *Repository) GetMessageByRequestId(ctx context.Context, requestId string
 	err := r.db.QueryRow(ctx, query, requestId).Scan(&status)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", nil
+			return "", errors.Wrap(err, "no rows found for request ID")
 		}
 		return "", errors.Wrap(err, "failed to get message by request ID")
 	}

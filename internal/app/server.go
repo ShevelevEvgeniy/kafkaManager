@@ -36,16 +36,11 @@ func NewServer(cfg *config.Config, router chi.Router) *HttpServer {
 	}
 }
 
-func (hs *HttpServer) Run(log *zap.Logger, cfg *config.Config, certFile string, keyFile string) error {
+func (hs *HttpServer) Run(log *zap.Logger, cfg *config.Config) error {
 	log.Info("starting http_server: ", zap.String("port", cfg.HTTPServer.Port))
 
-	if certFile == "" || keyFile == "" {
-		log.Fatal("Certificate or key file path not set in environment variables: ", zap.String("certFile", certFile), zap.String("keyFile", keyFile))
-		return errors.New("certificate or key file path not set in environment variables")
-	}
-
 	go func() {
-		err := hs.server.ListenAndServeTLS(certFile, keyFile)
+		err := hs.server.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal("error occurred on http_server shutting down: ", zap.String("error", err.Error()))
 			return

@@ -28,12 +28,10 @@
 | Параметр                           | Описание                                               | Значение по умолчанию                          |
 |------------------------------------|--------------------------------------------------------|------------------------------------------------|
 | `ENV_TYPE`                         | Режим окружения                                        | `development`                                  |
-| `HTTP_SERVER_PORT`                 | Порт HTTP сервера                                      | `8080`                                         |
-| `HTTP_SERVER_NAME`                 | Имя HTTP сервера                                       | `message-gio`                                  |
+| `HTTP_SERVER_PORT`                 | Порт HTTP сервера                                      | `8081`                                         |
+| `HTTP_SERVER_NAME`                 | Имя HTTP сервера                                       | `kafka-manager`                                |
 | `HTTP_SERVER_TIMEOUT`              | Таймаут HTTP сервера                                   | `4s`                                           |
 | `HTTP_SERVER_IDLE_TIMEOUT`         | Таймаут бездействия HTTP сервера                       | `60s`                                          |
-| `HTTP_SERVER_CERT_FILE`            | Путь к сертификату для HTTPS                           | `/`                                            |
-| `HTTP_SERVER_KEY_FILE`             | Путь к приватному ключу для HTTPS                      | `/`                                            |
 | `DB_HOST`                          | Хост базы данных                                       | `localhost`                                    |
 | `DB_PORT`                          | Порт базы данных                                       | `5432`                                         |
 | `DB_NAME`                          | Имя базы данных                                        | `pkk_db`                                       |

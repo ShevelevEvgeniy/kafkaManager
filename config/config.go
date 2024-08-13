@@ -37,6 +37,6 @@ func logNonSecretConfig(log *zap.Logger, cfg *Config) {
 		zap.String("DB Name", cfg.DB.DBName),
 		zap.String("DB DriverName", cfg.DB.DriverName),
 		zap.String("Kafka Broker", cfg.Kafka.Broker),
-		zap.String("Kafka Topic", cfg.Kafka.Topic),
+		zap.String("Kafka Topic", cfg.Kafka.Topics),
 	)
 }
